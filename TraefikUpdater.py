@@ -10,6 +10,9 @@ class TraefikUpdater:
     def __init__(self):
         self.target_domain = os.environ['TARGET_DOMAIN']
         excluded = os.environ.get('EXCLUDED_DOMAINS')
+        self.cf_email = os.environ['CF_EMAIL']
+        self.cf_token = os.environ['CF_TOKEN']
+
         if excluded is None:
             self.excluded_domains = []
         else:
@@ -20,7 +23,7 @@ class TraefikUpdater:
 
         self.host_pattern = re.compile('\`([a-zA-Z0-9\.]+)\`')
 
-        self.cf = CloudFlare.CloudFlare(email=os.environ['CF_EMAIL'] , token=os.environ['CF_TOKEN'])
+        #self.cf = CloudFlare.CloudFlare(email=self.cf_email, token=self.cf_token)
         self.dkr = docker.from_env()
 
     def enter_update_loop(self):
@@ -66,14 +69,15 @@ class TraefikUpdater:
         dom_info = self.tld_info[tld]
         common_dict = {i: dom_info[i] for i in ('type', 'content', 'proxied')}
         post_dict = {**{'name':domain},**common_dict}
+        cf = CloudFlare.CloudFlare(email=dom_info['cf_email'], token=dom_info['cf_token'])
         try:
-            get_records = self.cf.zones.dns_records.get(dom_info['zone'], params={'name':domain})
+            get_records = cf.zones.dns_records.get(dom_info['zone'], params={'name':domain})
             if len(get_records) == 0:
-                post_record = self.cf.zones.dns_records.post(dom_info['zone'], data=post_dict)
+                post_record = cf.zones.dns_records.post(dom_info['zone'], data=post_dict)
                 print(f'New record created: {domain}')
             else:
                 for record in get_records:
-                    post_record = self.cf.zones.dns_records.put(dom_info['zone'], record['id'], data=post_dict)
+                    post_record = cf.zones.dns_records.put(dom_info['zone'], record['id'], data=post_dict)
                     print(f'Existing record updated: {domain}')
 
         except CloudFlare.exceptions.CloudFlareAPIError as e:
@@ -89,11 +93,14 @@ class TraefikUpdater:
             try:
                 domain = os.environ[f'DOMAIN{tld_count}']
                 zone = os.environ[f'DOMAIN{tld_count}_ZONE_ID']
+                cf_email = os.environ.get(f'DOMAIN{tld_count}_CF_EMAIL', self.cf_email)
+                cf_token = os.environ.get(f'DOMAIN{tld_count}_CF_TOKEN', self.cf_token)
+
                 try:
                     proxied = os.environ.get(f'DOMAIN{tld_count}_PROXIED',"TRUE").upper() == 'TRUE'
                 except KeyError:
                     proxied = false
-                self.tld_info[domain] = {"zone":zone, "proxied":proxied, "type":"CNAME", "content":self.target_domain}
+                self.tld_info[domain] = {"zone":zone, "proxied":proxied, "type":"CNAME", "content":self.target_domain, "cf_email":cf_email, "cf_token":cf_token}
             except KeyError:
                 break
         print(f'Found {tld_count-1} TLDs! {self.tld_info}')
