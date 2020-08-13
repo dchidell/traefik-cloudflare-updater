@@ -46,11 +46,23 @@ environment:
 
 ### Mandatory ENV vars:
 
+`CF_GLOBAL_KEY` - CloudFlare API Key (This must be the GLOBAL key)
+
+and 
+
+`CF_EMAIL` - CloudFlare API Email 
+
+Both `CF_GLOBAL_KEY` and `CF_EMAIL` are required if using the GLOBAL key. 
+
+or
+
+`CF_TOKEN` (recommended) - CloudFlare API Token (This must be a user token, NOT the global key)
+
+See https://github.com/cloudflare/python-cloudflare#providing-cloudflare-username-and-api-key for detailed information on CF authentication.
+
+
+
 `TARGET_DOMAIN` - a CNAME will be created pointing to this target
-
-`CF_EMAIL` - CloudFlare API Email
-
-`CF_TOKEN` - CloudFlare API Token
 
 `DOMAIN#` - Multiple of these per domain, e.g. `DOMAIN1=example.com`, `DOMAIN2=example.net` ... `DOMAINn=example.org`
 
@@ -63,3 +75,9 @@ environment:
 `DOMAIN#_PROXIED` - Whether to use CloudFlare proxy. Should be 'TRUE' or 'FALSE' (not 1 or 0) (defaults to TRUE)
 
 `EXCLUDED_DOMAINS` - Comma separated domains to be excluded from updating (i.e. if you want to statically define something) e.g. `EXCLUDED_DOMAINS=sub.domain.com,sub2.domain.com`
+
+`DOMAIN#_CF_TOKEN` - Override domain.com CloudFlare token (
+
+`DOMAIN#_CF_EMAIL` - Override domain.com CloudFlare email
+
+`DOMAIN#_CF_GLOBAL_KEY` - Override domain.com CloudFlare global key
