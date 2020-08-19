@@ -74,6 +74,10 @@ class TraefikUpdater:
             print(f"TLD {tld} not in updatable list")
             return False
 
+        if domain in self.excluded_domains:
+            print(f"Domain {domain} has been excluded, skipping...")
+            return False    
+
         dom_info = self.tld_info[tld]
         common_dict = {i: dom_info[i] for i in ("type", "content", "proxied")}
         post_dict = {**{"name": domain}, **common_dict}
